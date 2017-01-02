@@ -73,13 +73,11 @@ end
 
 folders = { k1, k2, k3, k4, k5 };
 
-%{
 save( 'mat/k/k1.mat', 'k1' );
 save( 'mat/k/k2.mat', 'k2' );
 save( 'mat/k/k3.mat', 'k3' );
 save( 'mat/k/k4.mat', 'k4' );
 save( 'mat/k/k5.mat', 'k5' );
-%}
 
 
 

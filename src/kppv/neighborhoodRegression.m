@@ -1,7 +1,18 @@
+% This algorithm separate database in 5 segments
+% Segment 1 will be used like training set and 4 others will be used as
+% learning set
+% Foreach testing picture we determine "neighborNumber" of Nearest Neighbor
+% in the training set
+% Those will be represent a sub-training set, we do a PLS regressor on it
+% and estimate the value of the picture.
+
+% Use like this:
 % neighborhoodRegression(faces, 'LBP', 'age', 30, {k1, k2, k3, k4, k5}, 20);
 
+% MAE = Mean Age Error
+
 function [ MAE, kAE ] = neighborhoodRegression( data, featureName, targetName, NCOMP, kFolds, neighborNumber )
-tic
+
     % number of folds
     numFolds = length( kFolds );
 
@@ -12,15 +23,13 @@ tic
     % read features and labels for each sample of each fold
     for kk = 1:numFolds
 
-        % On crée une matrice de taille du fold par taille de la feature
-        % Ex: Taille de k1 par taille de LBP
+        % Create a matrix(sizeFold, sizeFeature)
         kX{ kk } = zeros(length( kFolds{ kk } ), length( data{1}.( featureName ) ) );
 
-        % On crée une matrice vide de la taille du fold
-        % Ex: Taille de k1
+        % Create empty matrix(sizeFold, 1)
         kY{ kk } = zeros(length( kFolds{ kk } ), 1);
 
-        % on parcout le fold courrant
+        % For the current fold
         for i = 1:length( kFolds{ kk } )
             kX{ kk }(i,:) = data{ kFolds{ kk }(i) }.( featureName );      
             kY{ kk }(i) = str2double( data{ kFolds{ kk }(i) }.( targetName ) );
@@ -31,16 +40,16 @@ tic
     %%%%%%%%%%%%%%%%%%%%%%%%%
     % FEATURE NORMALIZATION %
     %%%%%%%%%%%%%%%%%%%%%%%%%
-    assignin('base', 'kX', kX);
+    % assignin('base', 'kX', kX);
     
-    for i = 1:numFolds % Pour chaque fold
+    for i = 1:numFolds % Foreach fold
         fold = kX{i,1};
         
-        for j = 1:size(fold,2) % On parcourt les colones du fold
+        for j = 1:size(fold,2) % Foreach fold column
             x_min = min(fold(:,j));
             x_max = max(fold(:,j));
             if x_min ~= x_max
-                % On parcourt les individus pour les normaliser
+                % Foreach image : Normalize
                 for l = 1:size(fold,1)
                     xi = kX{i,1}(l,j);
                     kX{i,1}(l,j) = (xi - x_min)/(x_max - x_min);
@@ -48,12 +57,13 @@ tic
             end
         end
     end
-    assignin('base', 'kX_normalized', kX);
+    % assignin('base', 'kX_normalized', kX);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%
-    % CROSS VALIDATION      %
+    %   CROSS VALIDATION    %
     %%%%%%%%%%%%%%%%%%%%%%%%%        
-    % On parcourt chaque ensemble de test
+
+    % Foreach testing set
     reg = [];
     for kk = 1:numFolds
         X = [];
@@ -61,7 +71,7 @@ tic
         T = []; % Test
         TY = []; % Test label
         
-        % On crée les ensemble de training(X,Y) & test(T)
+        % Creation of sets : training(X,Y) & testing(T)
         for jj = 1:numFolds    
             if jj ~= kk
                 X = vertcat( X, kX{ jj } );
@@ -72,12 +82,12 @@ tic
             end
         end
         
-        % Pour chaque element de test
-        % On cherche ses 'neighborNumber' voisins
-        % Et on fait un PLSR dessus
+        % Foreach testing element
+        % We looking for its 'neighborNumber' neighbors
+        % And we do a PLS regressor on them
         for ti = 1:size(T)
            % X = training set
-           % T = Test set
+           % T = Testing set
            [nX, nY] = computeNeighbor(T(ti, :), X, Y, neighborNumber);
            
            % Learning on neighbor
@@ -102,8 +112,6 @@ tic
     end
     
     MAE = mean(reg(:,3))
-    
-    toc
     %assignin('base', 'reg', reg);
 end
 
